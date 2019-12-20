@@ -1,19 +1,33 @@
 import requests
 import json
 
-def get_team_info(sport, league_id, season):
-    params = {'sport': sport, 'league_id': league_id, 'season': season}
+
+def set_params(league_id, season, sport='NBA'):
+    return {'sport': sport, 'league_id': league_id, 'season': season}
+
+def get_team_info(params, name=""):
     req = requests.get("https://www.fleaflicker.com/api/FetchLeagueRosters", params)
     league = json.loads(req.text)
-    team_id_list = {}
+    team_list = {}
     for team in league["rosters"]:
-        team_id_list[team["team"]["name"]] = team["team"]["id"]
-    return team_id_list
+        if name == "":
+            team_list[team["team"]["name"]] = team["team"]["id"]
+        else:
+            if name == team["team"]["name"]:
+                team_list[team["team"]["name"]] = team["team"]["id"]   
+                return team_list
+    return team_list
 
-def get_team_roster(sport, league_id, season, team_id):
-    params = {'sport': sport, 'league_id': league_id, 'season': season, 'team_id': team_id}
+def parse_team_dict(params, team_list):
+    for team in team_list:
+        print("*****  ", team, "  *****")
+        get_team_roster(params, team_list[team])
+
+def get_team_roster(params, team_id):
+    params['team_id'] = team_id
     req = requests.get("https://www.fleaflicker.com/api/FetchRoster", params)
     parse_group(json.loads(req.text))
+    del params['team_id']
 
 def parse_group(roster):
     player_groups = roster["groups"]
@@ -24,7 +38,6 @@ def parse_group(roster):
             print('BENCH:')
         slot = entry.get('slots')
         print_team(slot)
-    print()
 
 def print_team(player_list):
     # print(json.dumps(player_list, indent=2))
@@ -34,11 +47,8 @@ def print_team(player_list):
     print()
 
 def main():
-    teams = get_team_info('NBA', 23630, 2019)
-    for team in teams:
-        print(team)
-        get_team_roster('NBA', 23630, 2019, teams[team])
-
+    params = set_params(23630, 2019)
+    parse_team_dict(params, get_team_info(params, "Kyrie IRving"))
 
 if __name__ == "__main__":
     main()
